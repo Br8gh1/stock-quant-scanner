@@ -3,10 +3,9 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
+st.set_page_config(page_title="Br8ght Scanner", page_icon="🚀", layout="wide")
 
-st.set_page_config(page_title="Br8gh1 System", page_icon="🚀", layout="wide")
-
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=300)
 def load_data():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds_info = {
@@ -28,68 +27,48 @@ def load_data():
     worksheet = sh.worksheet("Data_Scan")
     return pd.DataFrame(worksheet.get_all_records())
 
+def render_cards(df, label):
+    if df.empty:
+        st.info(f"🚫 ไม่พบหุ้นในระบบ {label}")
+        return
+    cols = st.columns(3)
+    for idx, row in df.reset_index().iterrows():
+        with cols[idx % 3]:
+            with st.container(border=True):
+                st.subheader(f"📈 {row['name']}")
+                c1, c2 = st.columns(2)
+                c1.metric("ENTRY", row['entry'])
+                c2.metric("SL", row['sl'], delta_color="inverse")
+                st.write("---")
+                t1, t2, t3 = st.columns(3)
+                t1.caption(f"TP1\n{row['tp1_rr1_1']}")
+                t2.caption(f"TP2\n{row['tp2_swing']}")
+                t3.caption(f"TP3\n{row['tp3_run_trend']}")
+                if st.button(f"Analyze {row['name']}", key=f"{label}_{row['name']}"):
+                    st.session_state['selected_stock'] = row['name']
+
+# --- Main App ---
 try:
     df = load_data()
-    
-    rename_dict = {
-        'tp1_rr1_1': 'TP1', 
-        'tp2_swing': 'TP2', 
-        'tp3_run_trend': 'TP3'
-    }
-    df = df.rename(columns=rename_dict)
+    st.title("🚀 Alpha Quant Scanner")
 
-    st.title("🚀 Br8gh1 Logic Scanner v1.1")
-    
-    if not df.empty:
-        
-        logic_column = 'Logic' 
-        available_logics = sorted(df[logic_column].unique().tolist())
-        
+    df_brk = df[df['signals'].str.contains("BREAKOUT", na=False)]
+    df_pb  = df[df['signals'].str.contains("PULLBACK", na=False)]
+    df_smc = df[df['signals'].str.contains("SMC", na=False)]
+    df_mom = df[df['signals'].str.contains("MOMENTUM", na=False)]
 
-        st.info(f"ระบบตรวจพบทั้งหมด **{len(available_logics)} Logic สแกน** ในขณะนี้")
-        
-        tabs = st.tabs([f"🧪 {logic.upper()}" for logic in available_logics])
+    t1, t2, t3, t4 = st.tabs(["🔥 Breakout", "📉 Pullback", "🏦 SMC", "⚡ Momentum"])
+    with t1: render_cards(df_brk, "BRK")
+    with t2: render_cards(df_pb, "PB")
+    with t3: render_cards(df_smc, "SMC")
+    with t4: render_cards(df_mom, "MOM")
 
-        for i, logic_name in enumerate(available_logics):
-            with tabs[i]:
-            
-                logic_df = df[df[logic_column] == logic_name]
-                
-           
-                card_cols = st.columns(3)
-                for idx, row in logic_df.reset_index().iterrows():
-                    with card_cols[idx % 2]:
-                        with st.container(border=True):
-                            st.markdown(f"### **{row['name']}**")
-                            
-                            c1, c2 = st.columns(2)
-                            c1.metric("ENTRY", row['entry'])
-                            c2.metric("STOP", row['sl'], delta_color="inverse")
-                            
-                            st.markdown("---")
-                            t1, t2, t3 = st.columns(3)
-                            t1.caption(f"TP1\n**{row.get('TP1', '-')}**")
-                            t2.caption(f"TP2\n**{row.get('TP2', '-')}**")
-                            t3.caption(f"TP3\n**{row.get('TP3', '-')}**")
-                            
-                            if st.button(f"Analyze {row['name']}", key=f"btn_{logic_name}_{row['name']}"):
-                                st.session_state['selected_stock'] = row['name']
-
-
-        st.divider()
-        current_stock = st.session_state.get('selected_stock', df['name'].iloc[0] if not df.empty else "")
-        if current_stock:
-            st.subheader(f"📊 Chart: {current_stock}")
-            chart_html = f"""
-            <div style="height:500px;">
-                <iframe src="https://s.tradingview.com/widgetembed/?symbol={current_stock}&interval=D&theme=dark&style=1&timezone=Asia%2FBangkok&locale=th" 
-                width="100%" height="500" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
-            </div>
-            """
-            st.components.v1.html(chart_html, height=520)
-
-    else:
-        st.warning("ไม่มีข้อมูลการสแกน")
+    st.divider()
+    sel = st.session_state.get('selected_stock', df['name'].iloc[0] if not df.empty else "")
+    if sel:
+        st.subheader(f"📊 Chart: {sel}")
+        chart_url = f"https://s.tradingview.com/widgetembed/?symbol={sel}&interval=D&theme=dark"
+        st.components.v1.html(f'<iframe src="{chart_url}" width="100%" height="550" frameborder="0"></iframe>', height=560)
 
 except Exception as e:
-    st.error(f"Error: {e}")
+    st.error(f"รออัปเดตข้อมูล... ({e})")
