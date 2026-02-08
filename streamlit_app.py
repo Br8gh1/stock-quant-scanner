@@ -42,7 +42,7 @@ try:
     
     if not df.empty:
         
-        logic_column = 'strategy' 
+        logic_column = 'Logic' 
         available_logics = sorted(df[logic_column].unique().tolist())
         
 
