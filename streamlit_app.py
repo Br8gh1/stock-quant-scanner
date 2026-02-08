@@ -1,8 +1,20 @@
+import json
 import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
+@st.cache_data(ttl=600)
+def load_data():
+    # ดึงค่า JSON จาก Secrets มาแปลงกลับเป็น Dictionary
+    info = json.loads(st.secrets["gcp_service_account"]["json_data"])
+    creds = Credentials.from_service_account_info(info)
+    client = gspread.authorize(creds)
+    
+    sh = client.open("Stock_Scan_Result")
+    worksheet = sh.worksheet("Data_Scan")
+    data = worksheet.get_all_records()
+    return pd.DataFrame(data)
 # --- การตั้งค่าหน้าเว็บ ---
 st.set_page_config(page_title="Alpha Scanner Pro", layout="wide")
 
