@@ -76,7 +76,7 @@ try:
         'tp3_run_trend': 'TP3'
     })
 
-    st.title("🚀 Br8gh1 Multi-Strategy Scanner")
+    st.title("🚀 Alpha Multi-Strategy Scanner")
 
     # --- 3. การทำ Logic Filtering ---
     # 1. BREAKOUT
