@@ -35,18 +35,18 @@ def load_data():
 st.title("🚀 Alpha Quant Scanner")
 
 try:
-    df = load_data()
-    st.success(f"พบหุ้นทั้งหมด {len(df)} ตัวในตาราง")
-    st.dataframe(df, use_container_width=True)
-
-    st.divider()
-    selected_stock = st.selectbox("เลือกหุ้นเพื่อดูรายละเอียด:", df['name'].unique())
-    if selected_stock:
-        data = df[df['name'] == selected_stock].iloc[0]
-        st.info(f"**Signal:** {data['signals']} | **Entry:** {data['entry']} | **SL:** {data['sl']}")
-        
-        chart_url = f"https://s.tradingview.com/widgetembed/?symbol={selected_stock}&interval=D&theme=dark"
-        st.components.v1.iframe(chart_url, height=450)
-
+   # แก้ไขส่วน load_data() เป็นแบบนี้ครับ
+@st.cache_data(ttl=600)
+def load_data():
+    # ดึงค่าจาก Streamlit Secrets แทนการอ่านไฟล์ key.json
+    creds_dict = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(creds_dict)
+    client = gspread.authorize(creds)
+    
+    sh = client.open("Stock_Scan_Result")
+    worksheet = sh.worksheet("Data_Scan")
+    data = worksheet.get_all_records()
+    return pd.DataFrame(data)
+    
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาด: {e}")
