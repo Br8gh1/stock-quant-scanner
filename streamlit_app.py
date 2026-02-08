@@ -1,39 +1,25 @@
 import streamlit as st
 import pandas as pd
 import gspread
-import json
 from google.oauth2.service_account import Credentials
 
-# --- การตั้งค่าหน้าเว็บ (Dark Mode & Layout) ---
-st.set_page_config(
-    page_title="Alpha Quant Scanner Pro",
-    page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# --- 1. การตั้งค่าหน้าเว็บ ---
+st.set_page_config(page_title="Alpha Scanner Pro", page_icon="🚀", layout="wide")
 
-# ปรับสไตล์ CSS ให้ Card ดูทันสมัย
+# CSS ปรับแต่ง Metric และ Button ให้ดูทันสมัย
 st.markdown("""
     <style>
-    .stContainer {
-        border-radius: 15px;
-        background-color: #1E1E1E;
-        padding: 20px;
-        border: 1px solid #333;
-        transition: transform 0.3s;
-    }
-    .stContainer:hover {
-        border: 1px solid #00FFCC;
-    }
+    [data-testid="stMetricValue"] { font-size: 1.6rem !important; font-weight: bold; }
+    .stButton > button { width: 100%; border-radius: 8px; border: 1px solid #444; }
+    .stButton > button:hover { border: 1px solid #00FFCC; color: #00FFCC; }
+    div[data-testid="stExpander"] { border: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- ฟังก์ชันโหลดข้อมูล ---
+# --- 2. ฟังก์ชันโหลดข้อมูล ---
 @st.cache_data(ttl=600)
 def load_data():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    
-    # ดึงค่าจาก Secrets (แบบแยกบรรทัดตามที่เราตั้งกันไว้)
     creds_info = {
         "type": st.secrets["gcp_service_account"]["type"],
         "project_id": st.secrets["gcp_service_account"]["project_id"],
@@ -47,92 +33,84 @@ def load_data():
         "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
         "universe_domain": st.secrets["gcp_service_account"]["universe_domain"],
     }
-    
     creds = Credentials.from_service_account_info(creds_info, scopes=scope)
     client = gspread.authorize(creds)
-    
     sh = client.open("Stock_Scan_Result")
     worksheet = sh.worksheet("Data_Scan")
-    data = worksheet.get_all_records()
-    return pd.DataFrame(data)
+    return pd.DataFrame(worksheet.get_all_records())
 
-# --- ส่วนแสดงผลหลัก ---
-st.title("🚀 Alpha Quant Scanner")
-st.caption(f"Last sync: {pd.Timestamp.now(tz='Asia/Bangkok').strftime('%Y-%m-%d %H:%M:%S')} (Bangkok Time)")
-
+# --- 3. ส่วนประมวลผลและ UI ---
 try:
     df = load_data()
     
+    # แก้ไขชื่อคอลัมน์ตาม Logic ใหม่ของคุณ
+    rename_dict = {
+        'tp1_rr1_1': 'TP1', 
+        'tp2_swing': 'TP2', 
+        'tp3_run_trend': 'TP3'
+    }
+    df = df.rename(columns=rename_dict)
+    
+    # ลบคอลัมน์ที่ไม่จำเป็น
+    if 'change' in df.columns:
+        df = df.drop(columns=['change'])
+
+    st.title("🚀 Alpha Quant Scanner")
+    st.caption("Real-time signals from Quant Model V2")
+
     if not df.empty:
-        # ล้างคอลัมน์และเปลี่ยนชื่อให้สวยงาม
-        rename_dict = {'tp1_rr1_1': 'TP1', 'tp2_swing': 'TP2', 'tp3_run_trend': 'TP3'}
-        df = df.rename(columns=rename_dict)
-        if 'change' in df.columns:
-            df = df.drop(columns=['change'])
+        # --- แยก Tab ตาม Signal ---
+        # กรองเอาเฉพาะสถานะที่มีอยู่จริงใน Sheet มาสร้าง Tab
+        unique_signals = sorted(df['signals'].unique().tolist())
+        tabs = st.tabs([f"📢 {s.upper()}" for s in unique_signals])
 
-        # --- ส่วนที่ 1: Dashboard Metrics ---
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total Signals", len(df))
-        m2.metric("Market Status", "OPEN" if 10 <= pd.Timestamp.now(tz='Asia/Bangkok').hour < 17 else "CLOSED")
-        m3.metric("System", "Quant V2")
-        m4.metric("Strategy", "Reversion")
+        for i, sig in enumerate(unique_signals):
+            with tabs[i]:
+                sig_df = df[df['signals'] == sig]
+                
+                # แสดงผลแบบ Grid (3 คอลัมน์บนจอคอม / ยุบเหลือ 1 บนมือถือ)
+                card_cols = st.columns(3)
+                for idx, row in sig_df.reset_index().iterrows():
+                    with card_cols[idx % 3]:
+                        with st.container(border=True):
+                            # Header: ชื่อหุ้น
+                            st.markdown(f"### **{row['name']}**")
+                            
+                            # Row 1: Entry & Stop Loss (ใช้ Metric เพื่อความสวยงาม)
+                            c1, c2 = st.columns(2)
+                            c1.metric("ENTRY", row['entry'])
+                            c2.metric("STOP LOSS", row['sl'], delta_color="inverse")
+                            
+                            st.markdown("---")
+                            
+                            # Row 2: Take Profit Levels (TP1, TP2, TP3)
+                            t1, t2, t3 = st.columns(3)
+                            t1.caption(f"🎯 TP1\n**{row.get('TP1', '-')}**")
+                            t2.caption(f"🎯 TP2\n**{row.get('TP2', '-')}**")
+                            t3.caption(f"🎯 TP3\n**{row.get('TP3', '-')}**")
+                            
+                            # ปุ่มดูรายละเอียด/กราฟ
+                            if st.button(f"Analyze {row['name']}", key=f"btn_{sig}_{row['name']}"):
+                                st.session_state['selected_stock'] = row['name']
 
+        # --- ส่วนแสดงกราฟ TradingView ---
         st.divider()
-
-        # --- ส่วนที่ 2: Card UI Representation ---
-        st.subheader("🎯 Active Trading Signals")
+        # เลือกหุ้นตัวแรกของกลุ่มแรกเป็นค่าเริ่มต้นหากยังไม่ได้กดปุ่มใดๆ
+        default_stock = df['name'].iloc[0] if not df.empty else ""
+        current_stock = st.session_state.get('selected_stock', default_stock)
         
-        # วาง Card แถวละ 3 ใบ
-        cols = st.columns(3)
-        for index, row in df.iterrows():
-            with cols[index % 3]:
-                with st.container(border=True):
-                    # ส่วนหัวของ Card
-                    st.markdown(f"### **{row['name']}**")
-                    st.markdown(f"**Signal:** `{row.get('signals', 'Hold')}`")
-                    
-                    # ตัวเลขราคา
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        st.write("🟢 **Entry**")
-                        st.title(f"{row['entry']}")
-                    with c2:
-                        st.write("🔴 **Stop Loss**")
-                        st.title(f"{row['sl']}")
-                    
-                    # เป้ากำไร (TP)
-                    st.markdown("---")
-                    t1, t2, t3 = st.columns(3)
-                    t1.caption(f"🏁 TP1\n**{row.get('TP1', 'N/A')}**")
-                    t2.caption(f"🏁 TP2\n**{row.get('TP2', 'N/A')}**")
-                    t3.caption(f"🏁 TP3\n**{row.get('TP3', 'N/A')}**")
-                    
-                    # ปุ่มดูรายละเอียดเพื่ออัปเดตกราฟ
-                    if st.button(f"Analyze {row['name']}", key=f"btn_{row['name']}", use_container_width=True):
-                        st.session_state['selected_stock'] = row['name']
-
-        # --- ส่วนที่ 3: กราฟ TradingView แบบ Full Screen Width ---
-        st.divider()
-        # ถ้ายังไม่ได้กดปุ่ม ให้เลือกตัวแรกในลิสต์มาโชว์ก่อน
-        current_selection = st.session_state.get('selected_stock', df['name'].iloc[0])
-        
-        st.subheader(f"🔍 Technical Chart: {current_selection}")
-        
-        chart_html = f"""
-        <div style="height:600px;">
-            <iframe src="https://s.tradingview.com/widgetembed/?symbol={current_selection}&interval=D&theme=dark&style=1&timezone=Asia%2FBangkok&withdateranges=1&locale=th" 
-            width="100%" height="600" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
-        </div>
-        """
-        st.components.v1.html(chart_html, height=610)
-
-        # แถมตารางดิบไว้ด้านล่างสุด เผื่ออยากเช็คข้อมูลรวม
-        with st.expander("View Raw Data Table"):
-            st.dataframe(df, use_container_width=True)
-
+        if current_stock:
+            st.subheader(f"📊 Technical Analysis: {current_stock}")
+            chart_html = f"""
+            <div style="height:550px;">
+                <iframe src="https://s.tradingview.com/widgetembed/?symbol={current_stock}&interval=D&theme=dark&style=1&timezone=Asia%2FBangkok&locale=th" 
+                width="100%" height="550" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
+            </div>
+            """
+            st.components.v1.html(chart_html, height=560)
     else:
-        st.info("🌙 Waiting for signals... The scanner will update during market hours.")
+        st.info("ไม่พบข้อมูลสัญญาณเทรดในขณะนี้")
 
 except Exception as e:
-    st.error(f"❌ Error during data sync: {e}")
-    st.info("Check your Google Sheets structure or Streamlit Secrets configuration.")
+    st.error(f"เกิดข้อผิดพลาด: {e}")
+    st.info("คำแนะนำ: ตรวจสอบว่าชื่อคอลัมน์ใน Google Sheets ตรงกับที่ระบุใน rename_dict หรือไม่")
