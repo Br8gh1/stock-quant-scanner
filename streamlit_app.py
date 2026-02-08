@@ -3,8 +3,8 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
-# --- การตั้งค่าหน้าเว็บ ---
-st.set_page_config(page_title="Br8gh1 Scanner System V1", page_icon="🚀", layout="wide")
+
+st.set_page_config(page_title="Br8gh1 System", page_icon="🚀", layout="wide")
 
 @st.cache_data(ttl=600)
 def load_data():
@@ -31,7 +31,6 @@ def load_data():
 try:
     df = load_data()
     
-    # Mapping ชื่อคอลัมน์ใหม่
     rename_dict = {
         'tp1_rr1_1': 'TP1', 
         'tp2_swing': 'TP2', 
@@ -42,26 +41,24 @@ try:
     st.title("🚀 Br8gh1 Logic Scanner v1.1")
     
     if not df.empty:
-        # --- แยก Tab ตาม Logic (Strategy) ---
-        # สมมติว่าใช้คอลัมน์ 'signals' เป็นตัวระบุ Logic/Strategy
-        # หากคุณมีคอลัมน์อื่นเช่น 'strategy' ให้เปลี่ยนชื่อตรงนี้ครับ
-        logic_column = 'signals' 
+        
+        logic_column = 'strategy' 
         available_logics = sorted(df[logic_column].unique().tolist())
         
-        # แสดงจำนวน Logic ที่พบ
+
         st.info(f"ระบบตรวจพบทั้งหมด **{len(available_logics)} Logic สแกน** ในขณะนี้")
         
         tabs = st.tabs([f"🧪 {logic.upper()}" for logic in available_logics])
 
         for i, logic_name in enumerate(available_logics):
             with tabs[i]:
-                # กรองหุ้นตาม Logic นั้นๆ
+            
                 logic_df = df[df[logic_column] == logic_name]
                 
-                # Card Layout
+           
                 card_cols = st.columns(3)
                 for idx, row in logic_df.reset_index().iterrows():
-                    with card_cols[idx % 3]:
+                    with card_cols[idx % 2]:
                         with st.container(border=True):
                             st.markdown(f"### **{row['name']}**")
                             
@@ -78,7 +75,7 @@ try:
                             if st.button(f"Analyze {row['name']}", key=f"btn_{logic_name}_{row['name']}"):
                                 st.session_state['selected_stock'] = row['name']
 
-        # --- ส่วนแสดงกราฟ ---
+
         st.divider()
         current_stock = st.session_state.get('selected_stock', df['name'].iloc[0] if not df.empty else "")
         if current_stock:
