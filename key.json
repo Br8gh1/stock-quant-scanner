@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "fine-cycling-486805-p5",
+  "private_key_id": "210562e2bb56905af0dfe846c4b3faf69ff3ac8c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDoBJcu10dFrfyy\nu6K31/Axl2tJ3BGpCg8CRM9r0ofZs8fLCvOVpuRlXQjUVuiLLqR47/qMqpGaYp1x\nVg8tzuPuI7WyaLoK3Zjps9OjQ5qVaSUflsm2YBtwXLh7zQmjz58k5CAPQ15iuI3C\nG+VMHA/iuTHoc8ZqjeKm+3nG5Kgp71HfLv7T5Dn46Sy93im3GQL5MNfyHTAxqo2N\nYRzNBRfAKW/oB8rOG4+mzMKE22iqbAAOnxh/LdTPla9+3H/Urx6g6qgl4so9oBVD\n9jXd7bnmA8+U18ydTRXRf8HMWGM8RrTcAWCBOeKPOQmLTb1kJXDmyO6M3YOLeKnv\nk8U55vMpAgMBAAECggEABiobDzRKkTwgbupD1kEfQV4NzHJTqMta3ztPTITVNbBM\nYmVp1+PNhTDt22BswMfuOEVeAY9Fm5W7q6d280dgMHNT8EfOi5vcJHdx69BPwuD+\nisKRnO4cRIW+JBHsS+UoDA2gmW83ioVvRMVDeBx1wpcbj5rF3o5jA39CesmX+zcy\n4B1cV3L6pZO2s//IvSKSn/9iO8g0PhWKNfvd7v0jRlTdtegJOVg4DsPI3OMEDqpV\naOzvNCw3H2q/4B0XeBuWuC3L9MbXVXqwbHR0dWPUuorWtRHfTtkj3bjFVGzy4qjX\nag8IWynpBq5en8OCqaBfgiCpwaWUmL8x5swZQOwJ9QKBgQD5leN6U/d+eoB/DvvZ\nwkIPJFnBZbbn9S+Y4YaH8OInvJRWc1gRRIoSZvKa1TCoQByMwMuHMJGj6KfCDhXE\nKdj6whmRgWIunMMw2xfoF84Lu44OaLMBlZRX9ujyMsHioRipQiwO/+hhtt2mxxn2\nQ8td95tVxW1Zn0v5YFk7PZmfrQKBgQDt+x5jfBeAWK6LsKZwm15SBk+4sCKAgLrd\nzlsELQYxZ/Cv7aX3KBoWAaYXRKdXc9iSsQ03rqBpQ92HR/uclHGtQjy5fn2T5kDY\nCekoyMOqJDOhzARkmQXJKHQIbm7fDRZwB+LbWFV7UYR4UnY9+PtWAy87J50dyC9j\nQ7Jafqqg7QKBgQCDJpZgg5r8JVc8bR0+smuQFWPs0owom5ilV20gJh5RDzFLtFTE\nziVXwi0d24U0BGx8MhtBMO53GRx+RnR9nhfcvP4+jaSQJeQT2i1X0pp9Y9MkEzRt\nUrKe/qouCyoC8vBIkPMh9qugHT2gE+O6mqlU+XXwvkvV2nVL16tMC/ScCQKBgQC/\n0+rj8FQVTeasjSEspeB6p8G9MqUtBhca0crF6/ERBCKb/SkJuBaG5J9YJCvrr2LE\no9juqGF/WIgKEvj7dyDGsxy1vQNGo5RjUGHUUTh/Ph0sb4KfAEYMpwIZBcNzIl6S\nwZiYjHSjKctpHbdYLwmRhJGe0kiwh/vCvP/YOEAb5QKBgDfAKwYuIgTbQJB4YmWV\ni5SpDXysbn4tl7i7LYmUgmh5AfpYIPoMz2mNR9lOhx7uimU+wndXDGnqUdleeUQc\n7HC5ABtUTZoK3OwOiYJIeyVL1sTvUqnoMQb6WHnKkOK03H656xQMZX9JZ66FBjdm\nyWAUm5ys8iW5z5Sz08xKXMB+\n-----END PRIVATE KEY-----\n",
+  "client_email": "stock-scan@fine-cycling-486805-p5.iam.gserviceaccount.com",
+  "client_id": "107594469977903740517",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/stock-scan%40fine-cycling-486805-p5.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
