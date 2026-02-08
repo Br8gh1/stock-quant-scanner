@@ -4,7 +4,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- การตั้งค่าหน้าเว็บ ---
-st.set_page_config(page_title="Alpha Scanner Pro", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="Br8gh1 Alpha Scanner System V1", page_icon="🚀", layout="wide")
 
 @st.cache_data(ttl=600)
 def load_data():
