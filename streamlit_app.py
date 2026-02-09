@@ -5,7 +5,6 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Br8ght Scanner", page_icon="🚀", layout="wide")
 
-
 # ----------------------------
 # Google Sheets loader
 # ----------------------------
