@@ -4,7 +4,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- 1. Page Config & Fixed Layout CSS ---
-st.set_page_config(page_title="Alpha Neon Fixed", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Br8gh1 System", page_icon="⚡", layout="wide")
 
 st.markdown("""
     <style>
