@@ -13,9 +13,9 @@ st.markdown("""
 
     /* ฝั่งซ้าย: กราฟ (นิ่งสนิท) */
     [data-testid="stColumn"]:nth-child(1) {
-        height: 100vh;
+        height: 70vh;
         overflow: hidden;
-        padding-right: 20px;
+        padding-right: 10px;
     }
 
     /* ฝั่งขวา: รายชื่อหุ้น (เลื่อนได้) */
