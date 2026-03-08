@@ -79,7 +79,7 @@ else:
     with st.sidebar:
         # ส่วน Filter ล็อคด้านบน
         st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-        st.markdown("### ⚡ **LIST SCANNER**")
+        st.markdown("### ⚡ **Br8gh1 System**")
         filter_type = st.radio("Signal Filter:", ["All", "Trend", "Pullback"], horizontal=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
