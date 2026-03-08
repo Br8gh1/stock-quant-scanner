@@ -3,182 +3,122 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
-st.set_page_config(page_title="Br8ght Scanner", page_icon="🚀", layout="wide")
+# --- 1. การตั้งค่าหน้าจอ ---
+st.set_page_config(page_title="Alpha Swing Pro: 10% Target", page_icon="📈", layout="wide")
 
-# ----------------------------
-# Google Sheets loader
-# ----------------------------
+# --- 2. การเชื่อมต่อ Google Sheets ---
 @st.cache_data(ttl=300)
-def load_sheets():
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    sa = st.secrets["gcp_service_account"]
-    creds_info = {
-        "type": sa["type"],
-        "project_id": sa["project_id"],
-        "private_key_id": sa["private_key_id"],
-        "private_key": sa["private_key"],
-        "client_email": sa["client_email"],
-        "client_id": sa["client_id"],
-        "auth_uri": sa["auth_uri"],
-        "token_uri": sa["token_uri"],
-        "auth_provider_x509_cert_url": sa["auth_provider_x509_cert_url"],
-        "client_x509_cert_url": sa["client_x509_cert_url"],
-        "universe_domain": sa.get("universe_domain", "googleapis.com"),
-    }
+def load_data():
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    # ดึงค่าจาก st.secrets (ต้องตั้งค่าใน Streamlit Cloud)
+    creds_info = st.secrets["gcp_service_account"]
     creds = Credentials.from_service_account_info(creds_info, scopes=scope)
     client = gspread.authorize(creds)
-
+    
     sh = client.open("Stock_Scan_Result")
-
-    def read_ws(name: str) -> pd.DataFrame:
-        ws = sh.worksheet(name)
-        df = pd.DataFrame(ws.get_all_records())
-        # normalize columns (lowercase + strip)
-        df.columns = [str(c).strip().lower() for c in df.columns]
-        return df
-
-    df_data = read_ws("Data_Scan")
-    df_long = read_ws("LONG_TERM_CORE")
-    df_swing = read_ws("SWING_SETUPS")
-
-    # make sure name exists and is string
-    for d in (df_data, df_long, df_swing):
-        if "name" in d.columns:
-            d["name"] = d["name"].astype(str)
-
-    return df_data, df_long, df_swing
-
-
-# ----------------------------
-# UI helpers
-# ----------------------------
-def safe_get(row, key, default=""):
-    k = key.lower()
-    return row.get(k, default)
-
-def render_cards(df: pd.DataFrame, label: str, show_action=False):
-    if df.empty:
-        st.info(f"🚫 ไม่พบหุ้นในระบบ {label}")
-        return
-
-    cols = st.columns(3)
-    for idx, row in df.reset_index(drop=True).iterrows():
-        with cols[idx % 3]:
-            with st.container(border=True):
-                name = safe_get(row, "name", "")
-                st.subheader(f"📈 {name}")
-
-                if show_action:
-                    action = safe_get(row, "action", "")
-                    reason = safe_get(row, "reason", "")
-                    if action:
-                        st.caption(f"**Action:** {action}")
-                    if reason:
-                        st.caption(f"**Reason:** {reason}")
-
-                c1, c2 = st.columns(2)
-                c1.metric("ENTRY", safe_get(row, "entry", "-"))
-                c2.metric("SL", safe_get(row, "sl", "-"), delta_color="inverse")
-
-                # TP fields may not exist in LONG/SWING sheets (your new scan exports tp2_swing only)
-                st.write("---")
-                t1, t2, t3 = st.columns(3)
-                t1.caption(f"TP1\n{safe_get(row, 'tp1_rr1_1', '-')}")
-                t2.caption(f"TP2\n{safe_get(row, 'tp2_swing', '-')}")
-                t3.caption(f"TP3\n{safe_get(row, 'tp3_run_trend', '-')}")
-
-                # Optional valuation fields
-                vg = safe_get(row, "valuation_gap", None)
-                fv = safe_get(row, "fv_base", None)
-                if vg not in [None, "", "-"] or fv not in [None, "", "-"]:
-                    with st.expander("Valuation", expanded=False):
-                        st.write(f"**FV Base:** {fv}")
-                        st.write(f"**Valuation Gap (%):** {vg}")
-
-                if st.button(f"Analyze {name}", key=f"{label}_{name}_{idx}"):
-                    st.session_state["selected_stock"] = name
-
-
-def normalize_for_tabs(df: pd.DataFrame) -> pd.DataFrame:
-    # Ensure signals column exists
-    if "signals" not in df.columns:
-        df["signals"] = ""
-    df["signals"] = df["signals"].astype(str)
+    worksheet = sh.worksheet("Data_Scan")
+    df = pd.DataFrame(worksheet.get_all_records())
     return df
 
+# --- 3. ฟังก์ชันการแสดงผล Card หุ้น ---
+def render_stock_card(row, idx):
+    with st.container(border=True):
+        # Header: ชื่อหุ้น และการเปลี่ยนแปลงประจำวัน
+        col_header1, col_header2 = st.columns([2, 1])
+        with col_header1:
+            st.markdown(f"### **{row['name']}**")
+        with col_header2:
+            change = row['change']
+            st.markdown(f"**{'+' if change > 0 else ''}{change}%**", 
+                        help="Daily Price Change")
 
-# ----------------------------
-# Main App
-# ----------------------------
+        # Signals Badge
+        signals = row['signals'].split("; ")
+        badge_html = "".join([f'<span style="background-color: #1E3A8A; color: white; padding: 2px 8px; border-radius: 10px; margin-right: 5px; font-size: 0.7rem;">{s}</span>' for s in signals])
+        st.markdown(badge_html, unsafe_allow_html=True)
+        st.write("")
+
+        # แถว Entry & SL
+        c1, c2 = st.columns(2)
+        c1.metric("ENTRY", f"${row['entry']}")
+        # คำนวณ % Loss จาก SL จริง
+        sl_val = row['sl_5%']
+        c2.metric("STOP LOSS", f"${sl_val}", delta="-5.0%", delta_color="inverse")
+
+        st.divider()
+
+        # ส่วนของ Take Profit (TP)
+        st.caption("🎯 TAKE PROFIT TARGETS")
+        tp_cols = st.columns(3)
+        
+        # TP1 (10% - Primary Target)
+        with tp_cols[0]:
+            st.markdown(f"<div style='text-align: center; background-color: #065F46; padding: 5px; border-radius: 5px;'>"
+                        f"<small style='color: #A7F3D0;'>TP1 (10%)</small><br>"
+                        f"<b>${row['tp1_10%']}</b></div>", unsafe_allow_html=True)
+        
+        # TP2 (20% - Swing)
+        with tp_cols[1]:
+            st.markdown(f"<div style='text-align: center; background-color: #064E3B; padding: 5px; border-radius: 5px;'>"
+                        f"<small style='color: #A7F3D0;'>TP2 (20%)</small><br>"
+                        f"<b>${row['tp2_20%']}</b></div>", unsafe_allow_html=True)
+            
+        # TP3 (30% - Trend)
+        with tp_cols[2]:
+            st.markdown(f"<div style='text-align: center; background-color: #022C22; padding: 5px; border-radius: 5px;'>"
+                        f"<small style='color: #A7F3D0;'>TP3 (30%)</small><br>"
+                        f"<b>${row['tp3_30%']}</b></div>", unsafe_allow_html=True)
+
+        st.write("")
+        if st.button(f"View Chart: {row['name']}", key=f"btn_{idx}", use_container_width=True):
+            st.session_state['selected_stock'] = row['name']
+
+# --- 4. Main UI ---
+st.title("🚀 Alpha Swing Pro: 10% Target Strategy")
+st.info("Strategy: Swing Trading in Large Caps | TP1: 10% | SL: 5% (RR 1:2)")
+
 try:
-    df_data, df_long, df_swing = load_sheets()
+    df_raw = load_data()
+    
+    if df_raw.empty:
+        st.warning("No stocks matched the signal today. Scanning for 'Trend Starter' or 'Quality Pullback'...")
+    else:
+        # แยก Tab ตามสัญญาณ
+        tab1, tab2 = st.tabs(["🔥 Trend Starters", "📉 Quality Pullbacks"])
 
-    st.title("🚀 Alpha Quant Scanner")
+        with tab1:
+            df_trend = df_raw[df_raw['signals'].str.contains("TREND", na=False)]
+            if not df_trend.empty:
+                cols = st.columns(3)
+                for i, (_, row) in enumerate(df_trend.iterrows()):
+                    with cols[i % 3]:
+                        render_stock_card(row, f"trend_{i}")
+            else:
+                st.write("No Trend Starter setups found.")
 
-    # Sidebar quick stats
-    with st.sidebar:
-        st.header("📌 Overview")
-        st.metric("Data_Scan", len(df_data))
-        st.metric("LONG_TERM_CORE", len(df_long))
-        st.metric("SWING_SETUPS", len(df_swing))
-        st.caption("Auto refresh every 5 minutes")
+        with tab2:
+            df_pb = df_raw[df_raw['signals'].str.contains("PULLBACK", na=False)]
+            if not df_pb.empty:
+                cols = st.columns(3)
+                for i, (_, row) in enumerate(df_pb.iterrows()):
+                    with cols[i % 3]:
+                        render_stock_card(row, f"pb_{i}")
+            else:
+                st.write("No Pullback setups found.")
 
-    # Tabs: original technical tabs + new LONG/SWING tabs
-    df_data = normalize_for_tabs(df_data)
-
-    df_brk = df_data[df_data["signals"].str.contains("BREAKOUT", na=False)]
-    df_pb  = df_data[df_data["signals"].str.contains("PULLBACK", na=False)]
-    df_smc = df_data[df_data["signals"].str.contains("SMC", na=False)]
-    df_mom = df_data[df_data["signals"].str.contains("MOMENTUM", na=False)]
-
-    t1, t2, t3, t4, t5, t6 = st.tabs(
-        ["🔥 Breakout", "📉 Pullback", "🏦 SMC", "⚡ Momentum", "🧱 LONG_TERM_CORE", "🎯 SWING_SETUPS"]
-    )
-
-    with t1:
-        render_cards(df_brk, "BRK")
-    with t2:
-        render_cards(df_pb, "PB")
-    with t3:
-        render_cards(df_smc, "SMC")
-    with t4:
-        render_cards(df_mom, "MOM")
-
-    with t5:
-        # LONG_TERM_CORE
-        render_cards(df_long, "LONG", show_action=True)
-
-    with t6:
-        # SWING_SETUPS
-        render_cards(df_swing, "SWING", show_action=True)
-
+    # --- 5. TradingView Widget Section ---
     st.divider()
-
-    # Chart section: allow selecting from all sources
-    all_names = []
-    for d in (df_data, df_long, df_swing):
-        if "name" in d.columns and not d.empty:
-            all_names.extend(d["name"].dropna().astype(str).tolist())
-
-    all_names = sorted(list(dict.fromkeys(all_names)))  # unique preserve order
-
-    default_sel = st.session_state.get("selected_stock", all_names[0] if all_names else "")
-    sel = st.selectbox("Select stock", options=all_names, index=all_names.index(default_sel) if default_sel in all_names else 0) if all_names else ""
-
-    if sel:
-        st.session_state["selected_stock"] = sel
-        st.subheader(f"📊 Chart: {sel}")
-        # if your sheet stores just ticker, keep it
-        # if it stores full exchange like NASDAQ:TSLA, you can detect it here
-        symbol = sel
-        chart_url = f"https://s.tradingview.com/widgetembed/?symbol={symbol}&interval=D&theme=dark"
-        st.components.v1.html(
-            f'<iframe src="{chart_url}" width="100%" height="550" frameborder="0"></iframe>',
-            height=560,
-        )
+    selected_symbol = st.session_state.get('selected_stock', df_raw['name'].iloc[0] if not df_raw.empty else None)
+    
+    if selected_symbol:
+        st.subheader(f"📊 Live Analysis: {selected_symbol}")
+        # ใส่ Widget TradingView
+        tv_url = f"https://s.tradingview.com/widgetembed/?symbol={selected_symbol}&interval=D&theme=dark"
+        st.components.v1.html(f'<iframe src="{tv_url}" width="100%" height="600" frameborder="0"></iframe>', height=610)
 
 except Exception as e:
-    st.error(f"รออัปเดตข้อมูล... ({e})")
+    st.error(f"Error loading dashboard: {e}")
+    st.info("Please make sure the Google Colab scanner has finished running and updated the sheet.")
+
+# --- Footer ---
+st.caption("Alpha Swing Pro © 2024 | Data refreshed every 5 minutes.")
