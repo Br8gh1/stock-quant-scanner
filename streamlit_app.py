@@ -4,18 +4,18 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- 1. Page Config ---
-st.set_page_config(page_title="Alpha Neon Terminal", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Br8gh1 System", page_icon="⚡", layout="wide")
 
 # --- 2. CSS: บังคับ Sidebar ไปอยู่ขวาและตกแต่ง Neon ---
 st.markdown("""
     <style>
     /* บังคับ Sidebar ไปไว้ฝั่งขวา */
     [data-testid="stSidebar"] {
-        left: auto;
-        right: 0;
-        width: 400px !important;
+        left: 0;
+        right: auto;
+        width: 350px !important;
         background-color: #0E1117;
-        border-left: 2px solid #00D4FF;
+        border-right: 2px solid #00D4FF;
     }
     [data-testid="stSidebarNav"] {display: none;} /* ซ่อนเมนูมาตรฐาน */
     
