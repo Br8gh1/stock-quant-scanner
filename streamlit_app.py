@@ -4,7 +4,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- 1. Page Config ---
-st.set_page_config(page_title="Alpha Neon Terminal", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Br!gh1 System", page_icon="⚡", layout="wide")
 
 # --- 2. CSS: ปรับแต่ง Layout ให้กราฟอยู่ซ้าย (Fixed) และ List อยู่ขวา (Scroll) ---
 st.markdown("""
@@ -89,7 +89,7 @@ else:
     with st.sidebar:
         # ส่วนหัวและ Filter (Sticky)
         st.markdown('<div class="sticky-header">', unsafe_allow_html=True)
-        st.markdown("### ⚡ **SCANNER LIST**")
+        st.markdown("### ⚡ **Br!gh1 System**")
         filter_type = st.radio("Signal:", ["All", "Trend", "Pullback"], horizontal=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
